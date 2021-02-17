@@ -1,0 +1,79 @@
+---
+title: "UntitledSimon task"
+output: html_document
+---
+
+
+```{r}
+library(tidyverse, lme4)
+```
+
+
+```{r}
+#loading all csv files
+tbl <-
+    list.files(path = "./SimonData/",
+               pattern = "*.csv", 
+               full.names = T) %>% 
+    map_df(~read_csv(., col_types = cols(.default = "c"))) 
+```
+
+
+
+```{r}
+#selecting the usefull variables
+df <- select(tbl, c(rt, key_press, part, color, position, subject, accuracy))
+
+#filtering out the training observations
+df <- filter(df, part == "test")
+
+#Making sure all is the same
+df$accuracy <- ifelse(df$accuracy=="TRUE", "true", df$accuracy)
+df$accuracy <- ifelse(df$accuracy=="FALSE", "false", df$accuracy)
+
+#creating a congruency variable - Congruent = red/right and green/left
+df$congruency <- ifelse(df$color=="red" & df$position == "right", "congruent", "NA")
+df$congruency <- ifelse(df$color=="green" & df$position == "left", "congruent", df$congruency)
+df$congruency <- ifelse(df$color=="red" & df$position == "left", "incongruent", df$congruency)
+df$congruency <- ifelse(df$color=="green" & df$position == "right", "incongruent", df$congruency)
+df$congruency <- ifelse(df$position == "middle", "neutral", df$congruency)
+
+#
+df <- df %>% 
+  mutate( key_press = as.factor(key_press), 
+          color = as.factor(color), 
+          accuracy = as.factor(accuracy), 
+          subject = as.factor(subject),
+          position = as.factor(position),
+          congruency = as.factor(congruency),
+          rt = as.numeric(rt))
+
+```
+
+
+```{r}
+#making a data frame with only correct answers
+dfcorrect <- filter(df, accuracy =="true")
+
+ggplot(dfcorrect, aes(x=congruency, y=rt, fill=congruency)) + geom_bar(stat='summary', fun.y=mean) + geom_errorbar(stat='summary', fun.data=mean_se, width=0.5) + scale_fill_brewer(palette = "Set1") + ggtitle("Reaction times")
+```
+
+```{r}
+m1 <- glm(rt ~ congruency , data = dfcorrect, family = inverse.gaussian)
+summary(m1)
+
+```
+
+
+
+
+```{r}
+ggplot(df, aes(x=accuracy, fill=congruency)) + geom_bar() + scale_fill_brewer(palette = "Set1") + facet_grid(~congruency) + ggtitle("Accuracy in congruency")
+```
+```{r}
+m2 <- glmer(accuracy ~ congruency + (1 + congruency | subject), data = df, family = binomial)
+summary(m2)
+```
+
+
+
