@@ -38,7 +38,7 @@ df$congruency <- ifelse(df$color=="red" & df$position == "left", "incongruent", 
 df$congruency <- ifelse(df$color=="green" & df$position == "right", "incongruent", df$congruency)
 df$congruency <- ifelse(df$position == "middle", "neutral", df$congruency)
 
-#
+#adjusting variables
 df <- df %>% 
   mutate( key_press = as.factor(key_press), 
           color = as.factor(color), 
@@ -55,10 +55,13 @@ df <- df %>%
 #making a data frame with only correct answers
 dfcorrect <- filter(df, accuracy =="true")
 
+
+#plotting reaction times 
 ggplot(dfcorrect, aes(x=congruency, y=rt, fill=congruency)) + geom_bar(stat='summary', fun.y=mean) + geom_errorbar(stat='summary', fun.data=mean_se, width=0.5) + scale_fill_brewer(palette = "Set1") + ggtitle("Reaction times")
 ```
 
 ```{r}
+#modeling reaction times
 m1 <- glm(rt ~ congruency , data = dfcorrect, family = inverse.gaussian)
 summary(m1)
 
@@ -68,9 +71,11 @@ summary(m1)
 
 
 ```{r}
+#plotting accuracy
 ggplot(df, aes(x=accuracy, fill=congruency)) + geom_bar() + scale_fill_brewer(palette = "Set1") + facet_grid(~congruency) + ggtitle("Accuracy in congruency")
 ```
 ```{r}
+#modeling accuracy
 m2 <- glmer(accuracy ~ congruency + (1 + congruency | subject), data = df, family = binomial)
 summary(m2)
 ```
